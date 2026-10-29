@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 
 import {
@@ -47,6 +48,8 @@ const fields: {
 ];
 
 export default function SignUpScreen() {
+  const router = useRouter();
+
   const {
     control,
     handleSubmit,
@@ -70,6 +73,14 @@ export default function SignUpScreen() {
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
+    });
+
+    // Navigate only after the form passes validation.
+    router.push({
+      pathname: "/confirmation",
+      params: {
+        firstName: data.firstName,
+      },
     });
   }
 
