@@ -1,3 +1,6 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+
 import {
   KeyboardAvoidingView,
   Platform,
@@ -6,9 +9,70 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  View,
 } from "react-native";
 
+import { signUpSchema, type SignUpValues } from "../validation/signUpSchema";
+
+const fields: {
+  name: keyof SignUpValues;
+  label: string;
+  placeholder: string;
+}[] = [
+  {
+    name: "firstName",
+    label: "First name",
+    placeholder: "Enter your first name",
+  },
+  {
+    name: "lastName",
+    label: "Last name",
+    placeholder: "Enter your last name",
+  },
+  {
+    name: "email",
+    label: "Email",
+    placeholder: "Enter your email",
+  },
+  {
+    name: "password",
+    label: "Password",
+    placeholder: "Enter your password",
+  },
+  {
+    name: "confirmPassword",
+    label: "Confirm password",
+    placeholder: "Re-enter your password",
+  },
+];
+
 export default function SignUpScreen() {
+  const {
+    control,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<SignUpValues>({
+    resolver: zodResolver(signUpSchema),
+    mode: "onSubmit",
+    reValidateMode: "onSubmit",
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  function onSubmit(data: SignUpValues) {
+    // Log only names and email, never passwords.
+    console.log({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+    });
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -23,62 +87,63 @@ export default function SignUpScreen() {
 
         <Text style={styles.description}>Complete all five fields below.</Text>
 
-        <Text style={styles.label}>First name</Text>
-        <TextInput
-          style={styles.input}
-          accessibilityLabel="First name"
-          placeholder="Enter your first name"
-          placeholderTextColor="#666666"
-          autoCapitalize="words"
-          autoCorrect={false}
-        />
+        {fields.map(({ name, label, placeholder }) => {
+          const isPassword = name === "password" || name === "confirmPassword";
 
-        <Text style={styles.label}>Last name</Text>
-        <TextInput
-          style={styles.input}
-          accessibilityLabel="Last name"
-          placeholder="Enter your last name"
-          placeholderTextColor="#666666"
-          autoCapitalize="words"
-          autoCorrect={false}
-        />
+          const isEmail = name === "email";
 
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          accessibilityLabel="Email"
-          placeholder="Enter your email"
-          placeholderTextColor="#666666"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
+          return (
+            <Controller
+              key={name}
+              control={control}
+              name={name}
+              render={({
+                field: { onChange, onBlur, value, ref },
+                fieldState: { error },
+              }) => (
+                <View style={styles.field}>
+                  <Text style={styles.label}>{label}</Text>
 
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          accessibilityLabel="Password"
-          placeholder="Enter your password"
-          placeholderTextColor="#666666"
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
+                  <TextInput
+                    ref={ref}
+                    style={[
+                      styles.input,
+                      error ? styles.invalidInput : undefined,
+                    ]}
+                    accessibilityLabel={label}
+                    placeholder={placeholder}
+                    placeholderTextColor="#666666"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    secureTextEntry={isPassword}
+                    keyboardType={isEmail ? "email-address" : "default"}
+                    autoCapitalize={isEmail || isPassword ? "none" : "words"}
+                    autoCorrect={false}
+                  />
 
-        <Text style={styles.label}>Confirm password</Text>
-        <TextInput
-          style={styles.input}
-          accessibilityLabel="Confirm password"
-          placeholder="Re-enter your password"
-          placeholderTextColor="#666666"
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
+                  {error && (
+                    <Text style={styles.error} accessibilityRole="alert">
+                      {error.message}
+                    </Text>
+                  )}
+                </View>
+              )}
+            />
+          );
+        })}
 
-        {/* Submission will be connected in a later commit. */}
-        <Pressable style={styles.button} accessibilityRole="button" disabled>
-          <Text style={styles.buttonText}>Sign Up</Text>
+        <Pressable
+          style={styles.button}
+          accessibilityRole="button"
+          disabled={isSubmitting}
+          onPress={() => {
+            void handleSubmit(onSubmit)();
+          }}
+        >
+          <Text style={styles.buttonText}>
+            {isSubmitting ? "Submitting..." : "Sign Up"}
+          </Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -105,6 +170,9 @@ const styles = StyleSheet.create({
     color: "#555555",
     marginBottom: 24,
   },
+  field: {
+    marginBottom: 18,
+  },
   label: {
     fontSize: 16,
     fontWeight: "600",
@@ -120,7 +188,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#111111",
     backgroundColor: "#ffffff",
-    marginBottom: 18,
+  },
+  invalidInput: {
+    borderColor: "#b42318",
+  },
+  error: {
+    color: "#b42318",
+    fontSize: 14,
+    marginTop: 5,
   },
   button: {
     backgroundColor: "#2457c5",
